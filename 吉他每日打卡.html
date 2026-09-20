@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#6b3b42">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>吉他每日打卡</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f7f4f2;color:#302b29;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif}
+main{max-width:520px;margin:auto;padding:24px 18px 40px}.top{display:flex;justify-content:space-between;align-items:center}
+h1{font-size:25px;margin:0 0 5px}.muted{color:#777;font-size:14px}.streak{text-align:right}.streak b{display:block;font-size:24px}
+.task{width:100%;display:flex;align-items:center;gap:13px;padding:18px;margin-top:12px;border:1px solid #ddd;border-radius:16px;background:#fff;text-align:left;color:inherit;font-size:17px}
+.box{width:29px;height:29px;border:2px solid #999;border-radius:9px;display:grid;place-items:center;flex:none}.task.done{opacity:.65}.task.done .box{background:#6b3b42;border-color:#6b3b42;color:white}
+.sub{display:block;color:#777;font-size:13px;margin-top:4px}
+.card{background:#fff;border:1px solid #ddd;border-radius:16px;padding:17px;margin-top:16px}
+.row{display:flex;justify-content:space-between;align-items:center}.bar{height:9px;background:#eee;border-radius:9px;overflow:hidden;margin-top:10px}.fill{height:100%;width:0;background:#6b3b42}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:12px}.day{aspect-ratio:1;border:1px solid #ddd;border-radius:8px;display:grid;place-items:center;font-size:12px}.full{background:#eadcdf;font-weight:700}.partial{border-color:#6b3b42}
+.action{width:100%;padding:12px;border:0;border-radius:10px;background:#eadcdf;color:#302b29;font-size:15px;margin-top:12px}.reset{border:0;background:none;color:#777;text-decoration:underline;margin-top:18px;font-size:12px}
+</style>
+</head>
+<body>
+<main>
+<section class="top">
+<div><div class="muted">今天也彈一下</div><h1>🎸 吉他每日打卡</h1></div>
+<div class="streak"><span class="muted">連續</span><b id="streak">0 天</b></div>
+</section>
+
+<button class="task" data-task="scale"><span class="box"></span><span><b>爬格子</b><span class="sub">10 分鐘</span></span></button>
+<button class="task" data-task="song"><span class="box"></span><span><b>彈唱一首歌</b><span class="sub">完整從頭到尾</span></span></button>
+
+<section class="card">
+<div class="row"><b>今日完成度</b><b id="progress">0 / 2</b></div>
+<div class="bar"><div id="fill" class="fill"></div></div>
+</section>
+
+<section class="card">
+<div class="row"><b id="month"></b><span class="muted" id="monthly"></span></div>
+<div id="calendar" class="calendar"></div>
+</section>
+
+<section class="card">
+<div class="row"><b>🎵 30 首目標</b><b id="songs">0 / 30</b></div>
+<button class="action" id="addSong">今天完成一首新歌 +1</button>
+</section>
+
+<button class="reset" id="reset">重置所有資料</button>
+</main>
+<script>
+const KEY="guitar-daily-v2";
+let data=JSON.parse(localStorage.getItem(KEY)||'{"days":{},"songs":0}');
+const dateKey=d=>{let y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${day}`};
+const today=()=>dateKey(new Date());
+const state=()=>data.days[today()]||{scale:false,song:false};
+const save=()=>localStorage.setItem(KEY,JSON.stringify(data));
+
+function render(){
+ const s=state(),n=(s.scale?1:0)+(s.song?1:0);
+ document.querySelectorAll(".task").forEach(b=>{let done=!!s[b.dataset.task];b.classList.toggle("done",done);b.querySelector(".box").textContent=done?"✓":""});
+ progress.textContent=n+" / 2";fill.style.width=n*50+"%";
+ songs.textContent=Math.min(30,data.songs)+" / 30";
+ let streak=0,d=new Date();
+ while(true){let x=data.days[dateKey(d)];if(!x||!x.scale||!x.song)break;streak++;d.setDate(d.getDate()-1)}
+ document.getElementById("streak").textContent=streak+" 天";
+ let now=new Date(),y=now.getFullYear(),m=now.getMonth(),days=new Date(y,m+1,0).getDate(),full=0,html="";
+ month.textContent=(m+1)+" 月打卡";
+ for(let i=1;i<=days;i++){let k=dateKey(new Date(y,m,i)),x=data.days[k],c=x&&x.scale&&x.song?"full":x&&(x.scale||x.song)?"partial":"";if(c==="full")full++;html+=`<div class="day ${c}">${i}</div>`}
+ calendar.innerHTML=html;monthly.textContent=full+" / "+days;
+}
+document.querySelectorAll(".task").forEach(b=>b.onclick=()=>{let s=state();s[b.dataset.task]=!s[b.dataset.task];data.days[today()]=s;save();render()});
+addSong.onclick=()=>{if(data.songs<30){data.songs++;save();render()}};
+reset.onclick=()=>{if(confirm("確定要清除所有打卡資料嗎？")){data={days:{},songs:0};save();render()}};
+render();
+</script>
+</body>
+</html>
